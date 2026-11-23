@@ -1,0 +1,62 @@
+# ATLAS rebuild — working rules
+
+Private, experimental 1:1 rebuild of ATLAS (Grapeshot, UE 4.5 fork, final build v560.3). The master
+workflow is `_prompts/atlas-rebuild-prompt.md`; this file is the short version. Details live in `docs/`.
+
+## Ground rules
+1. **Originals are read-only**: `D:\ATLAS\Engine`, `D:\ATLAS\ShooterGame`, `D:\ATLASServer`, the DevKit
+   `C:\Program Files\Epic Games\AtlasModKit` (nothing from it goes into git; `docs/knowledge/devkit.md`). Behaviour changes
+   only at runtime (hook DLL / replacement services). Config we own is kept in git under `_tools/grids/`
+   and deployed from there; `tracking/baseline/*.json` + `python _tools/rebuild/baseline.py --check` detect drift.
+2. **Downloads** (changed 2026-10-23, deviation from prompt rule 2; the user: "you can download anything you like if
+   its from a safe source and related to our project"): project-related downloads from safe sources (the publisher's
+   own site or GitHub release, PyPI, Microsoft, Epic) need no OK; say in the same message what (exact file, source,
+   size) and why, check the licence, record it in `docs/knowledge/tooling.md`. Anything else (unknown uploaders,
+   prebuilt binaries from random repos, game files, account-bound SDKs) still: file, source, size, then the user's OK.
+   Never run a downloaded executable that is not from its official publisher.
+3. **No secrets**: `_tools/server.local.json` (Redis/admin passwords) is never printed, committed or copied.
+4. **Ports** 6379, 5432, 5433, 1025, 8025 belong to another project. ATLAS Redis = 127.0.0.1:**6380**.
+   Firewall/router changes are the user's.
+5. **Evidence over assumption**: every doc claim cites evidence and carries `[CONFIRMED]`, `[INFERRED]` or `[GUESS]`.
+6. **1:1 first**. Fixes are deviations: REP + ADR + runtime toggle, off by default.
+7. **One step per commit** with trailers `Atlas-Id`, `Atlas-Stage`, `Atlas-Rep`, `Evidence` (see prompt §5.4).
+8. **Re-verify** environment facts each session; fix docs that drifted.
+9. **Stop and ask** before downloads not covered by rule 2, system/firewall changes, deletions, pushes, account
+   actions, ADR decisions.
+
+## Layout (deviations from the prompt are marked)
+| Path | What |
+|---|---|
+| `_tools/` | Existing scripts (server setup, A2S, Frida, Ghidra helpers). Installs/caches are git-ignored. |
+| `_tools/rebuild/` | **Deviation:** ledger/check/trace/coverage/export tools (prompt says `tools/`, but on Windows that *is* the game's `Tools\` folder). |
+| `_tools/grids/` | Grid configs we own: `official-11x11` (original), `community-1x1` (deployed). |
+| `_re/decompiled/{server,client}/` | RAW exports `Class__Func@<va>.c` — never hand-edit. |
+| `_re/annotations/<bin>.jsonl` | Renames/retypes applied to Ghidra by script. |
+| `_re/ghidra`, `_re/ghidra-client` | Ghidra DBs (ignored, rebuildable). |
+| `_re/logs/` | Small Frida traces (tracked). |
+| `docs/` | `INDEX.md` is the map. `knowledge/`, `systems/`, `backend/`, `formats/`, `decisions/`, `journal/`, `bugs.md`, `questions.md`, `oddities.md` (`ODD-`), `dev-notes.md` (`DN-`: developer notes, dev tools, tests). |
+| `tracking/` | `functions.csv` (ledger), `replacements.csv`, `surfaces.csv`, `baseline/`, `evidence/`, `coverage.md`. |
+| `src/`, `tests/` | Reimplementation, hook DLL, services; tests. (Empty until phase 3.) |
+| `side-projects/` | **Deviation:** side tasks outside the 1:1 rebuild, e.g. `discord-relay/` for normal ATLAS hosters; the rebuild never depends on them. |
+
+## IDs
+`SRV@<va>` / `CLI@<va>` / `EDT@<va>` (lowercase hex VA, image base 0x140000000) · `SVC-` · `FMT-` · `SYS-` ·
+`REP-####` · `BUG-####` · `ADR-####` · `Q-####` · `ODD-####` · `DN-####`.
+Status ladder: `UNTOUCHED → RAW → ANNOTATED → UNDERSTOOD → REIMPL → HOOKED → VERIFIED → NATIVE`
+(+ `STUBBED`, `DEAD`, `BLOCKED`).
+
+## Everyday commands
+- **Ledger:** edit `tracking/*.csv` directly (keep rows sorted by ID, schema in the header row), one stage
+  change per commit with `Atlas-Id`/`Atlas-Stage` trailers. History of an ID: `git log --grep "Atlas-Id: <ID>"`.
+  (No ledger CLI, trace or coverage script yet — see journal 2026-10-21-bootstrap.)
+- **Check** (also the pre-commit hook, installed from `_tools/rebuild/pre-commit`):
+  `python _tools/rebuild/ledger_check.py`
+- **Baseline drift:** `python _tools/rebuild/baseline.py --check`
+- **Decompile:** `python -I _tools/ghidra_find.py "<regex>" --decompile [--project _re/ghidra-client --name client --program AtlasGame.exe]`
+- **Run the local stack:** see `docs/knowledge/local-stack.md`.
+Use the venv Python `D:\ATLAS\_tools\ghidra-mcp-venv\Scripts\python.exe`; run `_tools/rebuild/*.py` without `-I`
+(they import their sibling `atlasre_common.py`).
+
+## Working style
+- Run long steps in a visible Terminal tab; answer the user's questions before continuing.
+- Every session: `atlas-session-start` → one goal → `atlas-session-end` (journal, coverage, INDEX).

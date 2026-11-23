@@ -1,0 +1,8 @@
+# Normalize text; keep raw decompiles byte-exact (their SHA-256 is recorded in the ledger).
+* text=auto
+_re/decompiled/** -text
+*.ps1 text eol=crlf
+*.py text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.json text eol=lf

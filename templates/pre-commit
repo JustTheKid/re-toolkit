@@ -1,0 +1,5 @@
+#!/bin/sh
+# Git pre-commit hook: refuse commits that break ledger consistency.
+# Install: copy to .git/hooks/pre-commit (done at bootstrap; again 2026-11-08 for --staged).
+# --staged: the tables being committed (the index, also a private GIT_INDEX_FILE), not the working tree's.
+exec "D:/ATLAS/_tools/ghidra-mcp-venv/Scripts/python.exe" "D:/ATLAS/_tools/rebuild/ledger_check.py" --quiet --staged

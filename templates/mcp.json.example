@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ghidra-server": {
+      "command": "D:\\ATLAS\\_tools\\ghidra-mcp-venv\\Scripts\\python.exe",
+      "args": ["-I", "D:\\ATLAS\\_tools\\ghidra_mcp_server.py", "--project-path", "D:\\ATLAS\\_re\\ghidra", "--project-name", "atlas"]
+    },
+    "ghidra-client": {
+      "command": "D:\\ATLAS\\_tools\\ghidra-mcp-venv\\Scripts\\python.exe",
+      "args": ["-I", "D:\\ATLAS\\_tools\\ghidra_mcp_server.py", "--project-path", "D:\\ATLAS\\_re\\ghidra-client", "--project-name", "client"]
+    }
+  }
+}
